@@ -1,0 +1,24 @@
+# 服务名
+Name: helloworld-rpc
+# 监听端口
+ListenOn: 0.0.0.0:8080
+# 服务注册
+Etcd:
+  Hosts:
+  - 127.0.0.1:2379
+  Key: helloworld-rpc
+#监控
+Prometheus:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+#链路追踪
+Telemetry:
+  Name: helloworld-rpc
+  Endpoint: http://simple-prod-collector.observability.svc:14268/api/traces
+  Sampler: 1.0
+  Batcher: jaeger
+# 日志
+Log:
+  ServiceName: helloworld-rpc
+  Level: error
