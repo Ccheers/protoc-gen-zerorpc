@@ -79,6 +79,7 @@ func buildMain(outDir string, gen *protogen.Plugin, file *protogen.File) {
 	if !os.IsNotExist(err) {
 		return
 	}
+	_ = os.WriteFile(filename, []byte(""), os.ModePerm)
 
 	g := gen.NewGeneratedFile(filename, protogen.GoImportPath(outDir))
 	configPkg := protogen.GoImportPath(goPackage("/internal/config"))
