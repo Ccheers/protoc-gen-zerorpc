@@ -4,26 +4,12 @@ option go_package = "github.com/Ccheers/protoc-gen-zerorpc/example/api/product/a
 
 package product.app.v1;
 
-import "google/api/annotations.proto";
-
 // blog service is a blog demo
 service BlogService {
 	// 获取文章列表
-	rpc GetArticles(GetArticlesReq) returns (GetArticlesResp) {
-		option (google.api.http) = {
-			get: "/v1/articles"
-			additional_bindings {
-				get: "/v1/author/{author_id}/articles"
-			}
-		};
-	}
+	rpc GetArticles(GetArticlesReq) returns (GetArticlesResp);
 	// 创建文章
-	rpc CreateArticle(Article) returns (Article) {
-		option (google.api.http) = {
-			post: "/v1/author/{author_id}/articles"
-			body: "*"
-		};
-	}
+	rpc CreateArticle(Article) returns (Article);
 }
 
 message GetArticlesReq {

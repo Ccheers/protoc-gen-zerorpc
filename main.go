@@ -29,7 +29,7 @@ func main() {
 			if !f.Generate {
 				continue
 			}
-			genZeroLayout(*outDir)
+			genZeroLayout(*outDir, gen, f)
 			genZeroLogic(*outDir, gen, f)
 			genClient(*outDir, gen, f)
 			genServer(*outDir, gen, f)
