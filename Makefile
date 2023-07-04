@@ -1,3 +1,4 @@
+.PHONY: gen_example
 gen_example:
 	go install
 	cd example && protoc --proto_path=. \
@@ -7,3 +8,7 @@ gen_example:
            --zerorpc_out=paths=source_relative,out=.:. \
            api/product/app/v1/v1.proto
 	#protoc-go-inject-tag -input=./example/api/product/app/v1/v1.pb.go
+
+.PHONY: changelog
+changelog:
+	git-chglog -o ./CHANGELOG.md
