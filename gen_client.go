@@ -41,10 +41,41 @@ func genClientFile(clientDir string, rootPackage protogen.GoImportPath, gen *pro
 
 	// 方法
 	for _, method := range svc.Methods {
-		g.P("func (x *", svc.GoName, "ClientImpl) ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", in *", method.Input.GoIdent, ", opts ...", grpcPkg.Ident("CallOption"), ") (*", method.Output.GoIdent, ", error) {")
+		g.P("func (x *", svc.GoName, "ClientImpl) ", clientSignature(g, method), " {")
 		g.P("client := ", svcPath.Ident("New"+svc.GoName+"Client(x.cli.Conn())"))
-		g.P("return client.", method.GoName, "(ctx, in, opts...)")
+		var args []string
+		args = append(args, "ctx")
+		if !method.Desc.IsStreamingClient() {
+			args = append(args, "in")
+		}
+		args = append(args, "opts...")
+		g.P("return client.", method.GoName, "(", strings.Join(args, ", "), ")")
 		g.P("}")
 	}
 	return
+}
+
+func clientSignature(g *protogen.GeneratedFile, method *protogen.Method) string {
+	return method.GoName + "(" + strings.Join(clientArgs(g, method), ", ") + ") " + clientReturn(g, method)
+}
+
+func clientReturn(g *protogen.GeneratedFile, method *protogen.Method) string {
+	var ret []string
+	if !method.Desc.IsStreamingClient() && !method.Desc.IsStreamingServer() {
+		ret = append(ret, "*"+g.QualifiedGoIdent(method.Output.GoIdent))
+	} else {
+		ret = append(ret, g.QualifiedGoIdent(method.Output.GoIdent.GoImportPath.Ident(method.Parent.GoName+"_"+method.GoName+"Client")))
+	}
+	ret = append(ret, "error")
+	return "(" + strings.Join(ret, ", ") + ")"
+}
+
+func clientArgs(g *protogen.GeneratedFile, method *protogen.Method) []string {
+	var args []string
+	args = append(args, "ctx "+g.QualifiedGoIdent(contextPkg.Ident("Context")))
+	if !method.Desc.IsStreamingClient() {
+		args = append(args, "in *"+g.QualifiedGoIdent(method.Input.GoIdent))
+	}
+	args = append(args, "opts ..."+g.QualifiedGoIdent(grpcPkg.Ident("CallOption")))
+	return args
 }

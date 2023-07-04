@@ -6,35 +6,42 @@ package product.app.v1;
 
 // blog service is a blog demo
 service BlogService {
-	// 获取文章列表
-	rpc GetArticles(GetArticlesReq) returns (GetArticlesResp);
-	// 创建文章
-	rpc CreateArticle(Article) returns (Article);
+  // 获取文章列表
+  rpc GetArticles(GetArticlesReq) returns (GetArticlesResp);
+  // 创建文章
+  rpc CreateArticle(Article) returns (Article);
+
+  rpc SvrStream(stream SvrStreamRequest) returns (SvrStreamReply);
+  rpc CliStream(SvrStreamRequest) returns (stream SvrStreamReply);
+  rpc BothStream(stream SvrStreamRequest) returns (stream SvrStreamReply);
 }
 
+message SvrStreamRequest {}
+message SvrStreamReply {}
+
 message GetArticlesReq {
-	// @inject_tag: form:"title"
-	string title = 1;
+  // @inject_tag: form:"title"
+  string title = 1;
 
-	// @inject_tag: form:"page"
-	int32 page = 2;
+  // @inject_tag: form:"page"
+  int32 page = 2;
 
-	// @inject_tag: form:"page_size"
-	int32 page_size = 3;
+  // @inject_tag: form:"page_size"
+  int32 page_size = 3;
 
-    // 作者名
-	// @inject_tag: form:"author_id" uri:"author_id"
-	int32 author_id = 4;
+  // 作者名
+  // @inject_tag: form:"author_id" uri:"author_id"
+  int32 author_id = 4;
 }
 
 message GetArticlesResp {
-	int64 total = 1;
-	repeated Article articles = 2;
+  int64 total = 1;
+  repeated Article articles = 2;
 }
 
 message Article {
-	string title  = 1;
-	string content = 2;
-	// @inject_tag: form:"author_id" uri:"author_id"
-	int32 author_id = 3;
+  string title = 1;
+  string content = 2;
+  // @inject_tag: form:"author_id" uri:"author_id"
+  int32 author_id = 3;
 }

@@ -75,7 +75,15 @@ func generateZeroLogicFile(outDir string, rootPackage protogen.GoImportPath, met
 	g.P("}")
 	g.P("}")
 
-	g.P("func (l *", method.GoName, "Logic) ", method.GoName, "(req *", g.QualifiedGoIdent(method.Input.GoIdent), ") (*", g.QualifiedGoIdent(method.Output.GoIdent), ", error) {")
+	var args []string
+	if !method.Desc.IsStreamingClient() {
+		args = append(args, "req *"+g.QualifiedGoIdent(method.Input.GoIdent))
+	}
+	if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
+		args = append(args, "stream "+g.QualifiedGoIdent(method.Input.GoIdent.GoImportPath.Ident(method.Parent.GoName+"_"+method.GoName+"Server")))
+	}
+
+	g.P("func (l *", method.GoName, "Logic) ", method.GoName, "(", strings.Join(args, ", "), ")", serverReturn(g, method), "{")
 	g.P("panic(\"implement me\")")
 	g.P("}")
 }

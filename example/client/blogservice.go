@@ -25,3 +25,15 @@ func (x *BlogServiceClientImpl) CreateArticle(ctx context.Context, in *v1.Articl
 	client := v1.NewBlogServiceClient(x.cli.Conn())
 	return client.CreateArticle(ctx, in, opts...)
 }
+func (x *BlogServiceClientImpl) SvrStream(ctx context.Context, opts ...grpc.CallOption) (v1.BlogService_SvrStreamClient, error) {
+	client := v1.NewBlogServiceClient(x.cli.Conn())
+	return client.SvrStream(ctx, opts...)
+}
+func (x *BlogServiceClientImpl) CliStream(ctx context.Context, in *v1.SvrStreamRequest, opts ...grpc.CallOption) (v1.BlogService_CliStreamClient, error) {
+	client := v1.NewBlogServiceClient(x.cli.Conn())
+	return client.CliStream(ctx, in, opts...)
+}
+func (x *BlogServiceClientImpl) BothStream(ctx context.Context, opts ...grpc.CallOption) (v1.BlogService_BothStreamClient, error) {
+	client := v1.NewBlogServiceClient(x.cli.Conn())
+	return client.BothStream(ctx, opts...)
+}

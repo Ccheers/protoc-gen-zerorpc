@@ -21,6 +21,9 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	BlogService_GetArticles_FullMethodName   = "/product.app.v1.BlogService/GetArticles"
 	BlogService_CreateArticle_FullMethodName = "/product.app.v1.BlogService/CreateArticle"
+	BlogService_SvrStream_FullMethodName     = "/product.app.v1.BlogService/SvrStream"
+	BlogService_CliStream_FullMethodName     = "/product.app.v1.BlogService/CliStream"
+	BlogService_BothStream_FullMethodName    = "/product.app.v1.BlogService/BothStream"
 )
 
 // BlogServiceClient is the client API for BlogService service.
@@ -31,6 +34,9 @@ type BlogServiceClient interface {
 	GetArticles(ctx context.Context, in *GetArticlesReq, opts ...grpc.CallOption) (*GetArticlesResp, error)
 	// 创建文章
 	CreateArticle(ctx context.Context, in *Article, opts ...grpc.CallOption) (*Article, error)
+	SvrStream(ctx context.Context, opts ...grpc.CallOption) (BlogService_SvrStreamClient, error)
+	CliStream(ctx context.Context, in *SvrStreamRequest, opts ...grpc.CallOption) (BlogService_CliStreamClient, error)
+	BothStream(ctx context.Context, opts ...grpc.CallOption) (BlogService_BothStreamClient, error)
 }
 
 type blogServiceClient struct {
@@ -59,6 +65,103 @@ func (c *blogServiceClient) CreateArticle(ctx context.Context, in *Article, opts
 	return out, nil
 }
 
+func (c *blogServiceClient) SvrStream(ctx context.Context, opts ...grpc.CallOption) (BlogService_SvrStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BlogService_ServiceDesc.Streams[0], BlogService_SvrStream_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &blogServiceSvrStreamClient{stream}
+	return x, nil
+}
+
+type BlogService_SvrStreamClient interface {
+	Send(*SvrStreamRequest) error
+	CloseAndRecv() (*SvrStreamReply, error)
+	grpc.ClientStream
+}
+
+type blogServiceSvrStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *blogServiceSvrStreamClient) Send(m *SvrStreamRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *blogServiceSvrStreamClient) CloseAndRecv() (*SvrStreamReply, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(SvrStreamReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *blogServiceClient) CliStream(ctx context.Context, in *SvrStreamRequest, opts ...grpc.CallOption) (BlogService_CliStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BlogService_ServiceDesc.Streams[1], BlogService_CliStream_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &blogServiceCliStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type BlogService_CliStreamClient interface {
+	Recv() (*SvrStreamReply, error)
+	grpc.ClientStream
+}
+
+type blogServiceCliStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *blogServiceCliStreamClient) Recv() (*SvrStreamReply, error) {
+	m := new(SvrStreamReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *blogServiceClient) BothStream(ctx context.Context, opts ...grpc.CallOption) (BlogService_BothStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BlogService_ServiceDesc.Streams[2], BlogService_BothStream_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &blogServiceBothStreamClient{stream}
+	return x, nil
+}
+
+type BlogService_BothStreamClient interface {
+	Send(*SvrStreamRequest) error
+	Recv() (*SvrStreamReply, error)
+	grpc.ClientStream
+}
+
+type blogServiceBothStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *blogServiceBothStreamClient) Send(m *SvrStreamRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *blogServiceBothStreamClient) Recv() (*SvrStreamReply, error) {
+	m := new(SvrStreamReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // BlogServiceServer is the server API for BlogService service.
 // All implementations must embed UnimplementedBlogServiceServer
 // for forward compatibility
@@ -67,6 +170,9 @@ type BlogServiceServer interface {
 	GetArticles(context.Context, *GetArticlesReq) (*GetArticlesResp, error)
 	// 创建文章
 	CreateArticle(context.Context, *Article) (*Article, error)
+	SvrStream(BlogService_SvrStreamServer) error
+	CliStream(*SvrStreamRequest, BlogService_CliStreamServer) error
+	BothStream(BlogService_BothStreamServer) error
 	mustEmbedUnimplementedBlogServiceServer()
 }
 
@@ -79,6 +185,15 @@ func (UnimplementedBlogServiceServer) GetArticles(context.Context, *GetArticlesR
 }
 func (UnimplementedBlogServiceServer) CreateArticle(context.Context, *Article) (*Article, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateArticle not implemented")
+}
+func (UnimplementedBlogServiceServer) SvrStream(BlogService_SvrStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method SvrStream not implemented")
+}
+func (UnimplementedBlogServiceServer) CliStream(*SvrStreamRequest, BlogService_CliStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method CliStream not implemented")
+}
+func (UnimplementedBlogServiceServer) BothStream(BlogService_BothStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method BothStream not implemented")
 }
 func (UnimplementedBlogServiceServer) mustEmbedUnimplementedBlogServiceServer() {}
 
@@ -129,6 +244,79 @@ func _BlogService_CreateArticle_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_SvrStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BlogServiceServer).SvrStream(&blogServiceSvrStreamServer{stream})
+}
+
+type BlogService_SvrStreamServer interface {
+	SendAndClose(*SvrStreamReply) error
+	Recv() (*SvrStreamRequest, error)
+	grpc.ServerStream
+}
+
+type blogServiceSvrStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *blogServiceSvrStreamServer) SendAndClose(m *SvrStreamReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *blogServiceSvrStreamServer) Recv() (*SvrStreamRequest, error) {
+	m := new(SvrStreamRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _BlogService_CliStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SvrStreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BlogServiceServer).CliStream(m, &blogServiceCliStreamServer{stream})
+}
+
+type BlogService_CliStreamServer interface {
+	Send(*SvrStreamReply) error
+	grpc.ServerStream
+}
+
+type blogServiceCliStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *blogServiceCliStreamServer) Send(m *SvrStreamReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _BlogService_BothStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BlogServiceServer).BothStream(&blogServiceBothStreamServer{stream})
+}
+
+type BlogService_BothStreamServer interface {
+	Send(*SvrStreamReply) error
+	Recv() (*SvrStreamRequest, error)
+	grpc.ServerStream
+}
+
+type blogServiceBothStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *blogServiceBothStreamServer) Send(m *SvrStreamReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *blogServiceBothStreamServer) Recv() (*SvrStreamRequest, error) {
+	m := new(SvrStreamRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // BlogService_ServiceDesc is the grpc.ServiceDesc for BlogService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -145,6 +333,23 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BlogService_CreateArticle_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SvrStream",
+			Handler:       _BlogService_SvrStream_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "CliStream",
+			Handler:       _BlogService_CliStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "BothStream",
+			Handler:       _BlogService_BothStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "api/product/app/v1/v1.proto",
 }

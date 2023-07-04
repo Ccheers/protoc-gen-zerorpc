@@ -44,10 +44,46 @@ func genServerFile(serverDir string, rootPackage protogen.GoImportPath, gen *pro
 
 	// 方法
 	for _, method := range svc.Methods {
-		g.P("func (x *", svc.GoName, "ServerImpl) ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", in *", method.Input.GoIdent, ") (*", method.Output.GoIdent, ", error) {")
+		g.P("func (x *", svc.GoName, "ServerImpl) ", serverSignature(g, method), "{")
+		if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
+			g.P("ctx := stream.Context()")
+		}
 		g.P("handler := ", logicPackage.Ident("New"+method.GoName+"Logic(ctx, x.svcCtx)"))
-		g.P("return handler.", method.GoName, "(in)")
+
+		var reqArgs []string
+		if !method.Desc.IsStreamingClient() {
+			reqArgs = append(reqArgs, "in")
+		}
+		if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
+			reqArgs = append(reqArgs, "stream")
+		}
+		g.P("return handler.", method.GoName, "(", strings.Join(reqArgs, ", "), ")")
 		g.P("}")
 	}
 	return
+}
+
+func serverSignature(g *protogen.GeneratedFile, method *protogen.Method) string {
+	return method.GoName + "(" + strings.Join(serverArgs(g, method), ", ") + ") " + serverReturn(g, method)
+}
+
+func serverReturn(g *protogen.GeneratedFile, method *protogen.Method) string {
+	if !method.Desc.IsStreamingClient() && !method.Desc.IsStreamingServer() {
+		return "(*" + g.QualifiedGoIdent(method.Output.GoIdent) + ", error)"
+	}
+	return "error"
+}
+
+func serverArgs(g *protogen.GeneratedFile, method *protogen.Method) []string {
+	var reqArgs []string
+	if !method.Desc.IsStreamingClient() && !method.Desc.IsStreamingServer() {
+		reqArgs = append(reqArgs, "ctx "+g.QualifiedGoIdent(contextPkg.Ident("Context")))
+	}
+	if !method.Desc.IsStreamingClient() {
+		reqArgs = append(reqArgs, "in *"+g.QualifiedGoIdent(method.Input.GoIdent))
+	}
+	if method.Desc.IsStreamingClient() || method.Desc.IsStreamingServer() {
+		reqArgs = append(reqArgs, "stream "+g.QualifiedGoIdent(method.Input.GoIdent.GoImportPath.Ident(method.Parent.GoName+"_"+method.GoName+"Server")))
+	}
+	return reqArgs
 }
